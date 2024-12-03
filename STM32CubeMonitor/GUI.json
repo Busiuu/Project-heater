@@ -1,0 +1,2365 @@
+[
+    {
+        "id": "9926b2a6.cef5f",
+        "type": "tab",
+        "label": "Advanced Flow",
+        "disabled": false,
+        "info": "# Advanced Flow of STM32CubeMonitor to highlight possibilities"
+    },
+    {
+        "id": "c87292d9.be5f3",
+        "type": "tab",
+        "label": "UI Buttons",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "f8ada7e36f37378f",
+        "type": "tab",
+        "label": "Switches",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "8381c865.236028",
+        "type": "subflow",
+        "name": "Single value",
+        "info": "The 'single value' subflow allows to extract data from processing node.\r\n\r\n * Filter Data to extract only one variable after the \"processing node\" step .\r\n * Modify the message to fit with standard widgets such as gauges.\r\n * Limit the number of messages to a maximum of 10 msg per second.\r\n\r\n### **Input**\r\n\r\nThe subflow 'single value' takes in input the `msg.payload`\r\nfrom the processing output. All the messages sent by the processing node have the same structure.\r\n\r\n    \"payload\": {\r\n        \"groupname\": \"Snapshot2\",\r\n        \"variabledata\": [\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            }\r\n        ],\r\n        \"variablename\": \"int2\"\r\n      }\r\n    }\r\n\r\n### **Filter on selected variable**\r\nSeveral messages are sent by the processing node for each variable, so the first step of this 'single value' subflow is to filter and keep only messages related to the selected variable.\r\nThe 'filter variable' node will only keep messages with the right `variablename` key.\r\n\r\n### **Extract duplets table**\r\n\r\nThe received message is an Object containing {groupname, variabledata[array], variablename}.  \r\nThe array contains two variables :\r\n - `y` the value \r\n - `x` the time\r\n\r\nA single message contains multiple pairs of values extract at a regular time interval.\r\nThe time interval depends on the acquisition frequency.\r\nWith the 'change' node and the `set` property, the `msg.payload` is set to \r\n`msg.payload.variabledata`, only the data variable array is set into msg.payload.\r\n\r\n    \"payload\": {\r\n        \"variabledata\": [\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            }\r\n        ]\r\n    }\r\n\r\n### **Split duplets table**\r\n\r\nThe data variable array is split with a length of one in smaller objects by the 'split' node.\r\nEach new object contains two subvariables : `y` and `x`.\r\n\r\n    \"payload\": {\r\n        \"y\": \"9\",\r\n        \"x\": \"1567509421459\"\r\n    }\r\n\r\n\r\n### **Limit the number of messages**\r\n\r\nThe 'delay' node allows to limit the maximum number of message per second.\r\nIn the 'single value' subflow, one message is extracted per second.\r\n\r\n>_Be careful, a dashboard saturation risk exists if too many messages are received per second._\r\n\r\n### **Extract only y values**\r\n\r\nThe `msg.payload` is set to `msg.payload.y` with the `set` property. \r\nOnly `y` variable is set into msg.payload as single value.\r\n\r\n    \"payload\": { \r\n        \"y\": \"9\" \r\n    }\r\n\r\n### **Output** \r\n\r\nSome widgets such as the gauge and the text node are using the `msg.payload` property.  \r\nThe output node is linked to a gauge that allows to see the evolution \r\nof the `y` variable as a function of time.\r\n\r\n\r\n![subflow_gauge](images/subflow_gauge.png)\r\n\r\n### **Details**\r\n\r\nNote : The debug node allows to see clearly and easily the \r\nmessage at the node output.  \r\n\r\n\r\n> More details on : [Node-Red](https://nodered.org/docs/user-guide/editor/workspace/subflows)\r\n\r\n\r\n-------\r\n\r\n",
+        "category": "",
+        "in": [
+            {
+                "x": 40,
+                "y": 60,
+                "wires": [
+                    {
+                        "id": "3c5ffe0d.9063b2"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 780,
+                "y": 140,
+                "wires": [
+                    {
+                        "id": "66397fd3.d8111",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "varfilter",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "icon": "font-awesome/fa-filter",
+                    "label": {
+                        "en-US": "Variable"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            }
+        ],
+        "color": "#3CB4E6"
+    },
+    {
+        "id": "7e9c50ed.2ab67",
+        "type": "subflow",
+        "name": "Group variables in a .csv file",
+        "info": "",
+        "category": "STMicroelectronics",
+        "in": [
+            {
+                "x": 60,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "c7f149ae.894818"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 840,
+                "y": 360,
+                "wires": [
+                    {
+                        "id": "802c75f2.9f7898",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "nbVar",
+                "type": "num",
+                "value": "",
+                "ui": {
+                    "icon": "font-awesome/fa-cogs",
+                    "label": {
+                        "en-US": "Number of Variables"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "num"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "delete_time",
+                "type": "bool",
+                "value": "false",
+                "ui": {
+                    "icon": "font-awesome/fa-clock-o",
+                    "label": {
+                        "en-US": "Single Time"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "bool"
+                        ]
+                    }
+                }
+            }
+        ],
+        "color": "#3CB4E6",
+        "icon": "node-red/join.svg"
+    },
+    {
+        "id": "91d68244.047e7",
+        "type": "subflow",
+        "name": "Select .csv variable",
+        "info": "",
+        "category": "STMicroelectronics",
+        "in": [
+            {
+                "x": 220,
+                "y": 120,
+                "wires": [
+                    {
+                        "id": "e9aa15c3.2c15f8"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 1180,
+                "y": 120,
+                "wires": [
+                    {
+                        "id": "d287b70e.45b4c8",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "varfilter",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "icon": "font-awesome/fa-cog",
+                    "label": {
+                        "en-US": "Variable name"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            }
+        ],
+        "color": "#3CB4E6",
+        "icon": "node-red/arrow-in.svg"
+    },
+    {
+        "id": "22293a40.207896",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey"
+            }
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "7c4be61ff77043c5",
+        "type": "serial-port",
+        "name": "UART_wyjscie",
+        "serialport": "/dev/tty.usbmodem12403",
+        "serialbaud": "115200",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "10000"
+    },
+    {
+        "id": "946ebde5.be765",
+        "type": "ui_group",
+        "name": "Wskaźniki",
+        "tab": "fccfda7.825f628",
+        "order": 1,
+        "disp": true,
+        "width": "20",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "fccfda7.825f628",
+        "type": "ui_tab",
+        "name": "Projekt sterowania grzałką ",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "b5b7d7f1f4d272b7",
+        "type": "ui_tab",
+        "name": "Wykresy",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "faa21b3110eca9bc",
+        "type": "ui_group",
+        "name": "Kontrola wykresu",
+        "tab": "fccfda7.825f628",
+        "order": 2,
+        "disp": true,
+        "width": "20",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "927dbc033008cabc",
+        "type": "ui_group",
+        "name": "Wykres",
+        "tab": "fccfda7.825f628",
+        "order": 3,
+        "disp": true,
+        "width": "20",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "1b8f9f84.b59fb",
+        "type": "ui_group",
+        "name": "Chart",
+        "tab": "e4a22138.efd5b",
+        "order": 1,
+        "disp": true,
+        "width": 15,
+        "collapse": false
+    },
+    {
+        "id": "3ab5d867.e37ba8",
+        "type": "probe",
+        "probeid": "066FFF485457725187092531",
+        "probename": "ST-Link v2-1B (...92531)",
+        "protocol": "SWD",
+        "frequency": "1.8 MHz - Default",
+        "probeproperty": "{\"SWD\":[\"4.6 MHz\",\"1.8 MHz - Default\",\"950 kHz\",\"400 kHz\",\"150 kHz\"],\"JTAG\":[\"18 MHz\",\"9 MHz\",\"4.5 MHz\",\"2.25 MHz\",\"1.12 MHz - Default\",\"560 kHz\",\"280 kHz\",\"140 kHz\"]}",
+        "probeversion": "ST Link firmware version V2.J36",
+        "connectionType": "p2p"
+    },
+    {
+        "id": "e4a22138.efd5b",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "3c5ffe0d.9063b2",
+        "type": "switch",
+        "z": "8381c865.236028",
+        "name": "filter variable",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "varfilter",
+                "vt": "env"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 170,
+        "y": 60,
+        "wires": [
+            [
+                "4e5ba7a5.14dec8"
+            ]
+        ]
+    },
+    {
+        "id": "4e5ba7a5.14dec8",
+        "type": "change",
+        "z": "8381c865.236028",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 430,
+        "y": 60,
+        "wires": [
+            [
+                "42bc6ed.5b20d9"
+            ]
+        ]
+    },
+    {
+        "id": "42bc6ed.5b20d9",
+        "type": "split",
+        "z": "8381c865.236028",
+        "name": "Split a table[1..n] of duplets in n msg of single duplet",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 800,
+        "y": 60,
+        "wires": [
+            [
+                "8b8ddb84.6fb208"
+            ]
+        ]
+    },
+    {
+        "id": "8b8ddb84.6fb208",
+        "type": "delay",
+        "z": "8381c865.236028",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "10",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 200,
+        "y": 140,
+        "wires": [
+            [
+                "66397fd3.d8111"
+            ]
+        ]
+    },
+    {
+        "id": "66397fd3.d8111",
+        "type": "change",
+        "z": "8381c865.236028",
+        "name": "keep only value and delete timestamp",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.y",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 490,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7b54efc3.0009e",
+        "type": "function",
+        "z": "7e9c50ed.2ab67",
+        "name": "Associate values with same timestamp",
+        "func": "let i = 0;\nlet j = 0;\nlet n = 0;\nlet msg1; \nlet msgArray = new Array();\nlet nbVar = msg.payload.length;\n\nfor(i = 0; i < nbVar; i++){\n    \n    let underArrayLength = msg.payload[i].length;\n    \n    for(j = 0; j < underArrayLength; j++){\n            \n            for(n = 0; n < nbVar; n++){\n                msg1 = msg.payload[n][j];\n                msgArray.push(msg1);\n            }\n    }\n    msg.payload = msgArray;\n    return msg;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 650,
+        "y": 80,
+        "wires": [
+            [
+                "b3b24fdd.b01b9"
+            ]
+        ]
+    },
+    {
+        "id": "b3b24fdd.b01b9",
+        "type": "split",
+        "z": "7e9c50ed.2ab67",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": "${nbVar}",
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 870,
+        "y": 80,
+        "wires": [
+            [
+                "cf754130.7de2a"
+            ]
+        ]
+    },
+    {
+        "id": "ca91d405.238ea8",
+        "type": "function",
+        "z": "7e9c50ed.2ab67",
+        "name": "Format data",
+        "func": "let output=\"\";\n\nif(typeof msg.payload == 'number') {\n    output = msg.payload;\n    \n}else if(typeof msg.payload == 'string'){\n    output = msg.payload;\n}else{\n    output = msg.payload.x + \";\"+ msg.payload.y;\n}\n\nmsg.payload = output ;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 200,
+        "wires": [
+            [
+                "802c75f2.9f7898"
+            ]
+        ]
+    },
+    {
+        "id": "802c75f2.9f7898",
+        "type": "join",
+        "z": "7e9c50ed.2ab67",
+        "name": "Join consecutive messages from the number of monitored variables",
+        "mode": "custom",
+        "build": "string",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": ";",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "${nbVar}",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 380,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c7f149ae.894818",
+        "type": "join",
+        "z": "7e9c50ed.2ab67",
+        "name": "Join [nbVar] consecutives messages",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": ";",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "${nbVar}",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 290,
+        "y": 80,
+        "wires": [
+            [
+                "7b54efc3.0009e"
+            ]
+        ]
+    },
+    {
+        "id": "cf754130.7de2a",
+        "type": "function",
+        "z": "7e9c50ed.2ab67",
+        "name": "Delete duplicate timestamps if user wants",
+        "func": "let i;\nlet delDup = env.get(\"delete_time\");\nlet nbVar = env.get(\"nbVar\");\nlet msgArray = new Array();\n\nif(delDup === false){\n    return msg;\n}else{\n    \n    msgArray.push(msg.payload[0]);\n    \n    for(i=1; i < nbVar; i++){\n        \n        msgArray.push(msg.payload[i].y);\n        \n    }\n    \n    msg.payload = msgArray;\n    return msg;\n    \n}\n\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 260,
+        "y": 200,
+        "wires": [
+            [
+                "91613227.a8eb8"
+            ]
+        ]
+    },
+    {
+        "id": "91613227.a8eb8",
+        "type": "split",
+        "z": "7e9c50ed.2ab67",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": "1",
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 570,
+        "y": 200,
+        "wires": [
+            [
+                "ca91d405.238ea8"
+            ]
+        ]
+    },
+    {
+        "id": "d287b70e.45b4c8",
+        "type": "change",
+        "z": "91d68244.047e7",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 950,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e9aa15c3.2c15f8",
+        "type": "switch",
+        "z": "91d68244.047e7",
+        "name": "filter variable",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "varfilter",
+                "vt": "env"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 390,
+        "y": 120,
+        "wires": [
+            [
+                "c88ffe31.b60d9"
+            ]
+        ]
+    },
+    {
+        "id": "c88ffe31.b60d9",
+        "type": "function",
+        "z": "91d68244.047e7",
+        "name": "define the .csv header ",
+        "func": "if(msg.payload.variabledata[0].y === undefined){\n    msg.payload.variabledata[0].x = 'timestamp' + \"_\" +  msg.payload.variablename;\n    msg.payload.variabledata[0].y = msg.payload.variablename;\n    return msg;\n}else{\n    return msg;\n}\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 5,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "d287b70e.45b4c8"
+            ]
+        ]
+    },
+    {
+        "id": "057ea5eacc3d7bfe",
+        "type": "serial in",
+        "z": "9926b2a6.cef5f",
+        "name": "UART odbiór danych",
+        "serial": "7c4be61ff77043c5",
+        "x": 320,
+        "y": 520,
+        "wires": [
+            [
+                "ecfc8d739f274bb1"
+            ]
+        ]
+    },
+    {
+        "id": "ecfc8d739f274bb1",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "regex",
+        "func": "// Odbierz ciąg znaków z UART\nlet input = msg.payload; // np. \"temp=25.3;hum=60;press=1013\"\n\n// Regex do wyciągania klucz-wartość\nlet regex = /(\\w+)=([\\d.]+)/g;\n\nlet result;\nlet parsedData = {};\n\n// Wykonaj regex na ciągu wejściowym\nwhile ((result = regex.exec(input)) !== null) {\n    let key = result[1]; // Klucz, np. \"temp\"\n    let value = parseFloat(result[2]); // Wartość jako liczba\n    parsedData[key] = value; // Zapisz w obiekcie\n}\n\n// Przekaż dane w formacie obiektu\nmsg.payload = parsedData; \nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 520,
+        "wires": [
+            [
+                "7e0ae1ebcf9fc3ea",
+                "b3914842d2b10571",
+                "145b99a0902f7834",
+                "c3f11db6171eaebe",
+                "db7c5f6b69ba51d7",
+                "188e786a737b4fee",
+                "65072bf199256790",
+                "a2fdf7a73319bb4c",
+                "917ad1173660a5c8"
+            ]
+        ]
+    },
+    {
+        "id": "7e0ae1ebcf9fc3ea",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Poziom_zaklocenia",
+        "func": "let Poziom_zaklocenia = msg.payload.Poziom_zaklocenia;  \nmsg.payload = Poziom_zaklocenia;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 930,
+        "y": 400,
+        "wires": [
+            [
+                "8fe1d2c7.16693"
+            ]
+        ]
+    },
+    {
+        "id": "8fe1d2c7.16693",
+        "type": "ui_gauge",
+        "z": "9926b2a6.cef5f",
+        "name": "myGauge",
+        "group": "946ebde5.be765",
+        "order": 10,
+        "width": "5",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Poziom zakłócenia",
+        "label": "%",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 1380,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "6cb73ae788c8f917",
+        "type": "link in",
+        "z": "9926b2a6.cef5f",
+        "name": "link in 2",
+        "links": [
+            "8d864a89.49def8"
+        ],
+        "x": 1025,
+        "y": 680,
+        "wires": [
+            [
+                "9dac024fa6ba898c"
+            ]
+        ]
+    },
+    {
+        "id": "9dac024fa6ba898c",
+        "type": "ui_chartst",
+        "z": "9926b2a6.cef5f",
+        "group": "927dbc033008cabc",
+        "name": "Wykres",
+        "order": 39,
+        "width": 0,
+        "height": 0,
+        "chartType": "line",
+        "curveType": "monotoneX",
+        "duration": "30",
+        "ymin": "",
+        "ymax": "",
+        "x": 1380,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "145b99a0902f7834",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Wypelnienie",
+        "func": "let Wypelnienie = msg.payload.Wypelnienie;\nlet Stan = global.get(\"wykresbit0\"); // odczyt zmiennej  \nlet Stop = global.get(\"stop_wykres\"); // odczyt zmiennej  \nif (Stan && Stop) {\n    msg.payload = {\n        groupname: \"Group1\", // Nazwa grupy na wykresie\n        variablename: \"Wypelnienie[%]\", // Nazwa zmiennej\n        variabledata: [\n            {\n                x: Date.now(), // Aktualny timestamp w milisekundach\n                y: Wypelnienie // Wartość wypełnienia\n            }\n        ]\n    };\n    msg.topic = \"data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 5,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 480,
+        "wires": [
+            [
+                "9dac024fa6ba898c",
+                "d7823d3eeb9ec006"
+            ]
+        ]
+    },
+    {
+        "id": "b3914842d2b10571",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Pomiar temperatury",
+        "func": "let Pomiar_temperatury = msg.payload.Pomiar_temperatury;\nlet Stan = global.get(\"wykresbit1\"); // odczyt zmiennej  \nlet Stop = global.get(\"stop_wykres\"); // odczyt zmiennej  \nif (Stan && Stop) {\n    msg.payload = {\n        groupname: \"Group1\", // Nazwa grupy na wykresie\n        variablename: \"Pomiar_temperatury[°C]\", // Nazwa zmiennej\n        variabledata: [\n            {\n                x: Date.now(), // Aktualny timestamp w milisekundach\n                y: Pomiar_temperatury // Wartość wypełnienia\n            }\n        ]\n    };\n    msg.topic = \"data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 5,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 520,
+        "wires": [
+            [
+                "9dac024fa6ba898c",
+                "69fa9f16a97f90a7"
+            ]
+        ]
+    },
+    {
+        "id": "c3f11db6171eaebe",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Temperatura zadana",
+        "func": "let Temperatura_zadana = msg.payload.Temperatura_zadana;\nlet Stan = global.get(\"wykresbit2\"); // odczyt zmiennej  \nlet Stop = global.get(\"stop_wykres\"); // odczyt zmiennej  \nif (Stan && Stop) {\n    msg.payload = {\n        groupname: \"Group1\", // Nazwa grupy na wykresie\n        variablename: \"Temperatura_zadana[°C]\", // Nazwa zmiennej\n        variabledata: [\n            {\n                x: Date.now(), // Aktualny timestamp w milisekundach\n                y: Temperatura_zadana // Wartość wypełnienia\n            }\n        ]\n    };\n    msg.topic = \"data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 5,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 560,
+        "wires": [
+            [
+                "9dac024fa6ba898c",
+                "7da7af148e544f49"
+            ]
+        ]
+    },
+    {
+        "id": "db7c5f6b69ba51d7",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Uchyb",
+        "func": "let Temperatura_zadana = msg.payload.Temperatura_zadana;\nlet Pomiar_temperatury = msg.payload.Pomiar_temperatury;\nlet Stan = global.get(\"wykresbit3\"); // odczyt zmiennej  \nlet Stop = global.get(\"stop_wykres\"); // odczyt zmiennej  \nif (Stan && Stop) {\n    msg.payload = {\n        groupname: \"Group1\", // Nazwa grupy na wykresie\n        variablename: \"Uchyb[°C]\", // Nazwa zmiennej\n        variabledata: [\n            {\n                x: Date.now(), // Aktualny timestamp w milisekundach\n                y: Temperatura_zadana - Pomiar_temperatury// Wartość wypełnienia\n            }\n        ]\n    };\n    msg.topic = \"data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 6,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 990,
+        "y": 600,
+        "wires": [
+            [
+                "9dac024fa6ba898c"
+            ]
+        ]
+    },
+    {
+        "id": "188e786a737b4fee",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Poziom zaklocenia",
+        "func": "let Poziom_zaklocenia = msg.payload.Poziom_zaklocenia;\nlet Stan = global.get(\"wykresbit4\"); // odczyt zmiennej  \nlet Stop = global.get(\"stop_wykres\"); // odczyt zmiennej  \nif (Stan && Stop) {\n    msg.payload = {\n        groupname: \"Group1\", // Nazwa grupy na wykresie\n        variablename: \"Poziom zaklocenia[%]\", // Nazwa zmiennej\n        variabledata: [\n            {\n                x: Date.now(), // Aktualny timestamp w milisekundach\n                y: Poziom_zaklocenia// Wartość wypełnienia\n            }\n        ]\n    };\n    msg.topic = \"data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\n    return msg;\n} else {\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 5,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 950,
+        "y": 640,
+        "wires": [
+            [
+                "9dac024fa6ba898c",
+                "9800e984e8ab5561"
+            ]
+        ]
+    },
+    {
+        "id": "fe7fc505e1751a5d",
+        "type": "ui_numeric",
+        "z": "9926b2a6.cef5f",
+        "name": "",
+        "label": "Temperatura zadana",
+        "tooltip": "",
+        "group": "927dbc033008cabc",
+        "order": 37,
+        "width": "8",
+        "height": "1",
+        "wrap": false,
+        "passthru": true,
+        "topic": "topic",
+        "topicType": "msg",
+        "format": "{{value}}",
+        "min": "20",
+        "max": "65",
+        "step": "0.10",
+        "className": "",
+        "x": 520,
+        "y": 780,
+        "wires": [
+            [
+                "a969bfe2328b1882"
+            ]
+        ]
+    },
+    {
+        "id": "65072bf199256790",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Temperatura zadana",
+        "func": "let Temperatura_zadana = msg.payload.Temperatura_zadana;  \nmsg.payload = Temperatura_zadana;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 360,
+        "wires": [
+            [
+                "415b06bdd2480bbf"
+            ]
+        ]
+    },
+    {
+        "id": "415b06bdd2480bbf",
+        "type": "ui_gauge",
+        "z": "9926b2a6.cef5f",
+        "name": "myGauge",
+        "group": "946ebde5.be765",
+        "order": 10,
+        "width": "5",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Temperatura zadana",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": "20",
+        "max": "65",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 1380,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "a2fdf7a73319bb4c",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Pomiar_temperatury",
+        "func": "let Pomiar_temperatury = msg.payload.Pomiar_temperatury;  \nmsg.payload = Pomiar_temperatury;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 320,
+        "wires": [
+            [
+                "1beda9a89d9f2c24"
+            ]
+        ]
+    },
+    {
+        "id": "1beda9a89d9f2c24",
+        "type": "ui_gauge",
+        "z": "9926b2a6.cef5f",
+        "name": "myGauge",
+        "group": "946ebde5.be765",
+        "order": 10,
+        "width": "5",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Pomiar temperatury",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": "20",
+        "max": "65",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 1380,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "917ad1173660a5c8",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Wypelnienie",
+        "func": "let Wypelnienie = msg.payload.Wypelnienie;  \nmsg.payload = Wypelnienie;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 280,
+        "wires": [
+            [
+                "736fa5ead722478f"
+            ]
+        ]
+    },
+    {
+        "id": "736fa5ead722478f",
+        "type": "ui_gauge",
+        "z": "9926b2a6.cef5f",
+        "name": "myGauge",
+        "group": "946ebde5.be765",
+        "order": 10,
+        "width": "5",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Wypełnienie",
+        "label": "%",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 1380,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "692797d958b00e84",
+        "type": "serial out",
+        "z": "9926b2a6.cef5f",
+        "name": "UART wysyłanie danych ",
+        "serial": "7c4be61ff77043c5",
+        "x": 1430,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "a969bfe2328b1882",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Wysylanie UART",
+        "func": "let Temperatura_zadana = msg.payload;\n\nif (typeof Temperatura_zadana === 'undefined') {\n    return null;\n}\n\n// Upewnij się, że Temperatura_zadana jest liczbą\nTemperatura_zadana = Number(Temperatura_zadana);\n\n// Jeśli liczba jest całkowita, dodaj \".0\"\nif (Number.isInteger(Temperatura_zadana)) {\n    msg.payload = Temperatura_zadana.toFixed(1); // Zawsze dodaje \".0\" jeśli cała liczba\n} else {\n    // Jeśli liczba jest zmiennoprzecinkowa, zostaw bez zmian\n    msg.payload = Temperatura_zadana.toString();\n}\n\nmsg.topic = \"Data\"; // Ustawienie tematu na \"data\", aby przesłać dane na wykres\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "1",
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nlet Stan = false;",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 780,
+        "wires": [
+            [
+                "692797d958b00e84",
+                "5aacfbd73f82f98c"
+            ]
+        ]
+    },
+    {
+        "id": "14444b2495d7cd89",
+        "type": "file",
+        "z": "9926b2a6.cef5f",
+        "name": "",
+        "filename": "/Users/busiu/Desktop/Log_File.csv",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 2500,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "03bb639abfc6e0f6",
+        "type": "subflow:7e9c50ed.2ab67",
+        "z": "9926b2a6.cef5f",
+        "name": "Group variables in a .csv file",
+        "env": [
+            {
+                "name": "nbVar",
+                "value": "4",
+                "type": "num"
+            },
+            {
+                "name": "delete_time",
+                "value": "true",
+                "type": "bool"
+            }
+        ],
+        "x": 2020,
+        "y": 620,
+        "wires": [
+            [
+                "20ebe80480327a9e"
+            ]
+        ]
+    },
+    {
+        "id": "e3872bcbe793c7c6",
+        "type": "change",
+        "z": "9926b2a6.cef5f",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1710,
+        "y": 540,
+        "wires": [
+            [
+                "03bb639abfc6e0f6"
+            ]
+        ]
+    },
+    {
+        "id": "d7823d3eeb9ec006",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "define the .csv header ",
+        "func": "if(msg.payload.variabledata[0].y === undefined){\n    msg.payload.variabledata[0].x = 'timestamp' + \"_\" +  msg.payload.variablename;\n    msg.payload.variabledata[0].y = msg.payload.variablename;\n    return msg;\n}else{\n    return msg;\n}\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 5,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 540,
+        "wires": [
+            [
+                "e3872bcbe793c7c6"
+            ]
+        ]
+    },
+    {
+        "id": "add39c7fcdadd0f7",
+        "type": "change",
+        "z": "9926b2a6.cef5f",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1710,
+        "y": 580,
+        "wires": [
+            [
+                "03bb639abfc6e0f6"
+            ]
+        ]
+    },
+    {
+        "id": "69fa9f16a97f90a7",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "define the .csv header ",
+        "func": "if(msg.payload.variabledata[0].y === undefined){\n    msg.payload.variabledata[0].x = 'timestamp' + \"_\" +  msg.payload.variablename;\n    msg.payload.variabledata[0].y = msg.payload.variablename;\n    return msg;\n}else{\n    return msg;\n}\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 5,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 580,
+        "wires": [
+            [
+                "add39c7fcdadd0f7"
+            ]
+        ]
+    },
+    {
+        "id": "55585a54118b70fe",
+        "type": "change",
+        "z": "9926b2a6.cef5f",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1710,
+        "y": 620,
+        "wires": [
+            [
+                "03bb639abfc6e0f6"
+            ]
+        ]
+    },
+    {
+        "id": "7da7af148e544f49",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "define the .csv header ",
+        "func": "if(msg.payload.variabledata[0].y === undefined){\n    msg.payload.variabledata[0].x = 'timestamp' + \"_\" +  msg.payload.variablename;\n    msg.payload.variabledata[0].y = msg.payload.variablename;\n    return msg;\n}else{\n    return msg;\n}\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 5,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 620,
+        "wires": [
+            [
+                "55585a54118b70fe"
+            ]
+        ]
+    },
+    {
+        "id": "3260126fe3091fd3",
+        "type": "change",
+        "z": "9926b2a6.cef5f",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1710,
+        "y": 700,
+        "wires": [
+            [
+                "03bb639abfc6e0f6"
+            ]
+        ]
+    },
+    {
+        "id": "9800e984e8ab5561",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "define the .csv header ",
+        "func": "if(msg.payload.variabledata[0].y === undefined){\n    msg.payload.variabledata[0].x = 'timestamp' + \"_\" +  msg.payload.variablename;\n    msg.payload.variabledata[0].y = msg.payload.variablename;\n    return msg;\n}else{\n    return msg;\n}\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 5,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 700,
+        "wires": [
+            [
+                "3260126fe3091fd3"
+            ]
+        ]
+    },
+    {
+        "id": "20ebe80480327a9e",
+        "type": "function",
+        "z": "9926b2a6.cef5f",
+        "name": "Czy zapisac?",
+        "func": "let Stop = global.get(\"stop_zapis\"); // odczyt zmiennej  \nif (Stop) {\n    return null;\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 1,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2250,
+        "y": 620,
+        "wires": [
+            [
+                "14444b2495d7cd89"
+            ]
+        ]
+    },
+    {
+        "id": "9899849a35be5017",
+        "type": "link in",
+        "z": "9926b2a6.cef5f",
+        "name": "link in 3",
+        "links": [
+            "98d0ab198da049a4"
+        ],
+        "x": 2305,
+        "y": 700,
+        "wires": [
+            [
+                "7a4ae2540f2d493a"
+            ]
+        ]
+    },
+    {
+        "id": "7a4ae2540f2d493a",
+        "type": "file",
+        "z": "9926b2a6.cef5f",
+        "name": "",
+        "filename": "/Users/busiu/Desktop/Log_File.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 2500,
+        "y": 700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5aacfbd73f82f98c",
+        "type": "debug",
+        "z": "9926b2a6.cef5f",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1280,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "8b133c39.55e5e",
+        "type": "ui_button",
+        "z": "c87292d9.be5f3",
+        "name": "",
+        "group": "927dbc033008cabc",
+        "order": 13,
+        "width": "6",
+        "height": 1,
+        "passthru": false,
+        "label": "Wyczysc wykres",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "[];",
+        "payloadType": "str",
+        "topic": "clear",
+        "topicType": "str",
+        "x": 180,
+        "y": 220,
+        "wires": [
+            [
+                "8d864a89.49def8"
+            ]
+        ]
+    },
+    {
+        "id": "8d864a89.49def8",
+        "type": "link out",
+        "z": "c87292d9.be5f3",
+        "name": "CLEAR link",
+        "mode": "link",
+        "links": [
+            "6cb73ae788c8f917"
+        ],
+        "x": 395,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "3061e358.e966dc",
+        "type": "inject",
+        "z": "c87292d9.be5f3",
+        "name": "Inject",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "write",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 300,
+        "wires": [
+            [
+                "c4f212c3.ad781"
+            ]
+        ]
+    },
+    {
+        "id": "c4f212c3.ad781",
+        "type": "link out",
+        "z": "c87292d9.be5f3",
+        "name": "INJECT",
+        "mode": "link",
+        "links": [],
+        "x": 395,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "885f3946d2735afb",
+        "type": "ui_button",
+        "z": "c87292d9.be5f3",
+        "name": "",
+        "group": "927dbc033008cabc",
+        "order": 13,
+        "width": "6",
+        "height": 1,
+        "passthru": false,
+        "label": "Wyczysc zapisany plik",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": " ",
+        "payloadType": "str",
+        "topic": "clear",
+        "topicType": "str",
+        "x": 200,
+        "y": 180,
+        "wires": [
+            [
+                "98d0ab198da049a4"
+            ]
+        ]
+    },
+    {
+        "id": "98d0ab198da049a4",
+        "type": "link out",
+        "z": "c87292d9.be5f3",
+        "name": "Czyszczenie link",
+        "mode": "link",
+        "links": [
+            "9899849a35be5017"
+        ],
+        "x": 395,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "368932ebe7d7e03b",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Sygnał sterujący ",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "wykres.bit0",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 180,
+        "y": 140,
+        "wires": [
+            [
+                "9332d3b3d8167d2f"
+            ]
+        ]
+    },
+    {
+        "id": "a484691e26a1568f",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Pomiar temperatury",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "wykres.bit1",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 200,
+        "y": 300,
+        "wires": [
+            [
+                "41a4ec8ffd532721"
+            ]
+        ]
+    },
+    {
+        "id": "2e31563bed1763c1",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Temperatura zadana",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "wykres.bit2",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 200,
+        "y": 460,
+        "wires": [
+            [
+                "d4a427514cb2a8f2"
+            ]
+        ]
+    },
+    {
+        "id": "11500b8678d5989a",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Uchyb",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "wykres.bit3",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 150,
+        "y": 620,
+        "wires": [
+            [
+                "5260fddb3cd30875"
+            ]
+        ]
+    },
+    {
+        "id": "0315757f22cadc6e",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Poziom zakłócenia",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "siema",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 190,
+        "y": 780,
+        "wires": [
+            [
+                "73dd67024ef315d5"
+            ]
+        ]
+    },
+    {
+        "id": "9332d3b3d8167d2f",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 140,
+        "wires": [
+            [
+                "02efb7ce0246f7de"
+            ],
+            [
+                "4a4fd2a27027b47e"
+            ]
+        ]
+    },
+    {
+        "id": "02efb7ce0246f7de",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit0",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4a4fd2a27027b47e",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit0",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "41a4ec8ffd532721",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "f5625840d2db5b9e"
+            ],
+            [
+                "c8e083ddd2f9ffce"
+            ]
+        ]
+    },
+    {
+        "id": "f5625840d2db5b9e",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit1",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c8e083ddd2f9ffce",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit1",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d4a427514cb2a8f2",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 460,
+        "wires": [
+            [
+                "bc7b8e599e116a51"
+            ],
+            [
+                "71d0d358634de2a9"
+            ]
+        ]
+    },
+    {
+        "id": "bc7b8e599e116a51",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit2",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "71d0d358634de2a9",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit2",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5260fddb3cd30875",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 620,
+        "wires": [
+            [
+                "d27dc3591b4304a5"
+            ],
+            [
+                "6163dca3a6a1a11c"
+            ]
+        ]
+    },
+    {
+        "id": "d27dc3591b4304a5",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit3",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6163dca3a6a1a11c",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit3",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "73dd67024ef315d5",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 780,
+        "wires": [
+            [
+                "0c02b136430a77c0"
+            ],
+            [
+                "f5c9d352a1fadad0"
+            ]
+        ]
+    },
+    {
+        "id": "0c02b136430a77c0",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit4",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 720,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f5c9d352a1fadad0",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "wykresbit4",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 820,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "61a1843f08f57c6a",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Zatrzymanie wykresu",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "siema",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 200,
+        "y": 940,
+        "wires": [
+            [
+                "975cb694498e96eb"
+            ]
+        ]
+    },
+    {
+        "id": "975cb694498e96eb",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 940,
+        "wires": [
+            [
+                "428ad9e60e0f3072"
+            ],
+            [
+                "3ad86471bac66275"
+            ]
+        ]
+    },
+    {
+        "id": "428ad9e60e0f3072",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "stop_wykres",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 880,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3ad86471bac66275",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "stop_wykres",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 980,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a1cb9e5a2e09c8bf",
+        "type": "ui_switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "label": "Zatrzymanie zapisu pomiarów",
+        "tooltip": "",
+        "group": "faa21b3110eca9bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "siema",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 170,
+        "y": 1100,
+        "wires": [
+            [
+                "9a7d6d69ad568a03"
+            ]
+        ]
+    },
+    {
+        "id": "9a7d6d69ad568a03",
+        "type": "switch",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": true,
+        "outputs": 2,
+        "x": 390,
+        "y": 1100,
+        "wires": [
+            [
+                "902941838b786ec1"
+            ],
+            [
+                "64b018f17ae5d7de"
+            ]
+        ]
+    },
+    {
+        "id": "902941838b786ec1",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "stop_zapis",
+                "pt": "global",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 1040,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "64b018f17ae5d7de",
+        "type": "change",
+        "z": "f8ada7e36f37378f",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "stop_zapis",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 600,
+        "y": 1140,
+        "wires": [
+            []
+        ]
+    }
+]
