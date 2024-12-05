@@ -33,3 +33,5 @@ Ten projekt przedstawia kompleksowe rozwiązanie regulacji temperatury grzałki 
 
 ## Dokumentacja
 Więcej szczegółów znajduje się w [dokumentacji projektu](https://github.com/Busiuu/Project-heater).
+
+PS. Proszę zignorować pliki .DS_Store, są to pliki odpowiadające za wygląd folderu w systemie macOS. 
