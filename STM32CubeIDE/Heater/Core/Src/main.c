@@ -62,7 +62,7 @@ float Ts = 0.01f;
 float wyjscie = 0.0f;
 float integrator = 0.0f;
 float Kp = 5000.0f;
-float Ki = 400.420;
+float Ki = 400.0f;
 int licznik_wiadomosc = 0;
 int licznik = 0;
 char uart_buffer[UART_BUFFER_SIZE];
@@ -91,8 +91,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		HAL_UART_Receive_IT(&huart3, (uint8_t*)uart_buffer, UART_BUFFER_SIZE);
   }
 }
-
-
 
 /* USER CODE END 0 */
 
@@ -130,9 +128,6 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-//  BMP2_Init(&bmp2dev_1);
-//  HEATER_PWM_Init(&hheater);
-//  HAL_UART_Receive_IT(&huart3, pwm_duty_msg, strlen(pwm_duty_msg));
   BMP280_Init(&hspi1, BMP280_TEMPERATURE_16BIT, BMP280_STANDARD, BMP280_FORCEDMODE);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -144,22 +139,44 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	//
+	// Odczyt z enkodera
+	//
 	licznik = __HAL_TIM_GET_COUNTER(&htim4);
+	//
+	//Ustawienie zaklocenia
+	//
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2,ceil(licznik*256.4));
-    temp = BMP280_ReadTemperature(); // pomiar
-    if (temp_zad > 65){ // zabezpieczenie
+	//
+	// Pomiar temperatury
+	//
+    temp = BMP280_ReadTemperature();
+    //
+    // Zabezpieczenie przed zbyt duza temperatura zadana
+    //
+    if (temp_zad > 65){ //
     	temp_zad = 65.0f;
     } else if (temp_zad < 20) {
     	temp_zad = 20.0f;
     }
+    //
+    // Regulator
+    //
     err = temp_zad - temp; // uchyb
+    if(abs(err) > 4){
+    integrator = 0;
+    } else{
     integrator += err; // integrator
-    if (integrator > 2299){ // anty wind-up
+    }
+    //anty wind-up
+    if (integrator > 2299){
             integrator = 2300;
     } else if (integrator < -2299){
             integrator = -2300;
     }
-    wyjscie = Kp * err + Ki * Ts * integrator; // wyjscie
+    // Obliczenie wyjscia
+    wyjscie = Kp * err + Ki * Ts * integrator;
+    // Obliczanie na podstawie wyjscia odpowiedzi PWM
     if(wyjscie > 9999){
     	duty = 9999;
     }
@@ -169,7 +186,12 @@ int main(void)
     if(wyjscie >= 0 && wyjscie <= 9999){
     	duty = ceil(wyjscie);
     }
+    // Ustawianie okresu PWM
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1,duty);
+    //
+    // Wysyanie wiadomości UART
+    // Ograniczenie do predkosci wysylania do 50ms - ograniczenie node-red
+    //
     licznik_wiadomosc++;
     if (licznik_wiadomosc >= 5){
     	licznik_wiadomosc = 0;
